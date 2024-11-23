@@ -151,7 +151,8 @@ export const createRoom = inngest.createFunction(
       const res = await fetchMutation(api.interview.createRoom, {
         roomId: payload.roomId,
         position: payload.position,
-        participants: payload.participants,
+        interviewer: payload.interviewer,
+        interviewee: payload.interviewee,
       });
 
       if (!res) {
@@ -165,23 +166,16 @@ export const createRoom = inngest.createFunction(
     });
 
     const notifyRoomCreated = await step.run("email_room_created", async () => {
-      const interviewer = createRoom.participants.find(
-        (item) => item.role === "interviewer"
-      );
-
-      const interviewee = createRoom.participants.find(
-        (item) => item.role === "interviewee"
-      );
+      const interviewer = createRoom.interviewer;
+      const interviewee = createRoom.interviewee;
 
       if (!interviewer || !interviewee) {
         throw new Error("Was unable to find the room participants.");
       }
 
-      const participants = createRoom.participants.map((item) => item.email);
-
       const { error, data } = await resend.emails.send({
         from: "onboarding@resend.dev",
-        to: participants,
+        to: [interviewer.email, interviewee.email],
         subject: "Interview initiated",
         html: await render(
           InterviewCreated({
@@ -208,7 +202,10 @@ export const generateReport = inngest.createFunction(
   { id: "after-interview" },
   { event: "interview/interview.report" },
   async ({ event, step }: Context<Inngest<{ id: string }>>) => {
-    const payload = event.data as Pick<CreateReport, "roomId" | "participants">;
+    const payload = event.data as Pick<
+      CreateReport,
+      "roomId" | "interviewer" | "interviewee"
+    >;
 
     const getRecordings = await step
       .run("get_recordings", async () => {
@@ -305,23 +302,16 @@ export const generateReport = inngest.createFunction(
     });
 
     const emailReports = await step.run("email_reports", async () => {
-      const interviewer = payload.participants.find(
-        (item) => item.role === "interviewer"
-      );
-
-      const interviewee = payload.participants.find(
-        (item) => item.role === "interviewee"
-      );
+      const interviewer = payload.interviewer;
+      const interviewee = payload.interviewee;
 
       if (!interviewer || !interviewee) {
         throw new Error("Was unable to find the room participants.");
       }
 
-      const participants = payload.participants.map((item) => item.email);
-
       const { error, data } = await resend.emails.send({
         from: "onboarding@resend.dev",
-        to: participants,
+        to: [interviewer.email, interviewee.email],
         subject: "Interview report generated.",
         html: await render(
           InterviewReport({

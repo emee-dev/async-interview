@@ -143,33 +143,38 @@ export default function AsyncInterviewRoom({ params }: ComponentProps) {
   const [stdErr, setStdError] = useState("");
   const [code, setCode] = useState<string>("");
   const [activeTab, setActiveTab] = useState<"stdout" | "stderr">("stdout");
-  const [isInterviewer, setIsInterviewer] = useState<boolean>(false);
+  const [userType, setUserType] = useState<
+    "interviewer" | "interviewee" | null
+  >(null);
 
   const { getUser, isLoading, isAuthenticated } = useKindeBrowserClient();
 
-  // Get room by roomId and determine the appropriate user type
+  // const queryCodeEditor = useQuery()
+  // const mutateCodeEditor = useMutation()
 
   const roomData = useQuery(
     api.interview.getRoomById,
     params.id ? { roomId: params.id } : "skip"
   );
 
+  // get user email
   useEffect(() => {
     if (!isLoading && isAuthenticated && roomData) {
       const user = getUser();
-      const participants = roomData.participants;
 
       if (user && user.email) {
-        const participant = participants.find(
-          (item) => item.email === user.email
-        );
+        const userEmail = user.email;
 
-        if (participant && participant.role === "interviewer") {
-          setIsInterviewer(true);
+        const interviewer = roomData.interviewer.email;
+        const interviewee = roomData.interviewee.email;
+
+        if (interviewer === userEmail) {
+          setUserType("interviewer");
+        } else if (interviewee === userEmail) {
+          setUserType("interviewee");
         } else {
-          setIsInterviewer(false);
+          setUserType(null);
         }
-        console.log("user", user);
       }
     }
   }, [isLoading, isAuthenticated, roomData]);

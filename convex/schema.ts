@@ -13,13 +13,14 @@ export default defineSchema(
     interview_rooms: defineTable({
       roomId: v.string(),
       position: v.string(),
-      participants: v.array(
-        v.object({
-          email: v.string(),
-          first_name: v.string(),
-          role: v.union(v.literal("interviewer"), v.literal("interviewee")),
-        })
-      ),
+      interviewer: v.object({
+        email: v.string(),
+        first_name: v.string(),
+      }),
+      interviewee: v.object({
+        email: v.string(),
+        first_name: v.string(),
+      }),
     }),
 
     final_data: defineTable({
@@ -38,6 +39,15 @@ export default defineSchema(
         transcripts: v.array(v.string()),
         reportInMarkdown: v.string(),
       }),
+    }),
+
+    editor_states: defineTable({
+      roomId: v.string(),
+      language: v.string(),
+      code: v.string(),
+      stdOut: v.string(),
+      stdErr: v.string(),
+      activeTab: v.union(v.literal("stdout"), v.literal("stderr")),
     }),
   },
   { schemaValidation: true }

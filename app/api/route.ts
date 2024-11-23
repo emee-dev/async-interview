@@ -24,13 +24,13 @@ type RecordResponse = {
 export type Pariticipants = {
   email: string;
   first_name: string;
-  role: "interviewer" | "interviewee";
 };
 
 export type CreateReport = {
   roomId: string;
   position: string; // eg Software developer
-  participants: Pariticipants[];
+  interviewer: Pariticipants;
+  interviewee: Pariticipants;
 };
 
 export const POST = async (req: Request) => {
@@ -42,7 +42,8 @@ export const POST = async (req: Request) => {
       data: {
         roomId: params.roomId,
         position: params.position,
-        participants: params.participants,
+        interviewer: params.interviewer,
+        interviewee: params.interviewee,
       } as CreateReport,
     });
 

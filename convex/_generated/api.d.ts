@@ -13,6 +13,7 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
+import type * as code_editor from "../code_editor.js";
 import type * as interview from "../interview.js";
 
 /**
@@ -24,6 +25,7 @@ import type * as interview from "../interview.js";
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  code_editor: typeof code_editor;
   interview: typeof interview;
 }>;
 export declare const api: FilterApi<

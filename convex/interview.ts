@@ -1,24 +1,21 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { paginationOptsValidator } from "convex/server";
 
-// const BACKEND_AI_WEBHOOK = process.env.BACKEND_AI_WEBHOOK;
-
-/**
- * Creates room with initial pariticipant
- */
 export const createRoom = mutation({
   args: {
     roomId: v.string(),
     position: v.string(),
-    participants: v.array(
-      v.object({
-        email: v.string(),
-        first_name: v.string(),
-        role: v.union(v.literal("interviewer"), v.literal("interviewee")),
-      })
-    ),
+    interviewer: v.object({
+      email: v.string(),
+      first_name: v.string(),
+    }),
+    interviewee: v.object({
+      email: v.string(),
+      first_name: v.string(),
+    }),
   },
-  handler: async (ctx, { roomId, participants, position }) => {
+  handler: async (ctx, { roomId, interviewee, interviewer, position }) => {
     const room = await ctx.db
       .query("interview_rooms")
       .filter((q) => q.eq(q.field("roomId"), roomId))
@@ -32,7 +29,8 @@ export const createRoom = mutation({
     const createRecord = await ctx.db.insert("interview_rooms", {
       roomId,
       position,
-      participants,
+      interviewer,
+      interviewee,
     });
 
     const getRecord = await ctx.db.get(createRecord);
@@ -57,6 +55,26 @@ export const getRoomById = query({
     }
 
     return room;
+  },
+});
+
+export const getRoomsByEmail = query({
+  args: {
+    email: v.string(),
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, { email, paginationOpts }) => {
+    const records = await ctx.db
+      .query("interview_rooms")
+      .filter((q) =>
+        q.or(
+          q.eq(q.field("interviewer.email"), email),
+          q.eq(q.field("interviewee.email"), email)
+        )
+      )
+      .order("desc")
+      .paginate(paginationOpts);
+    return records;
   },
 });
 
@@ -106,6 +124,15 @@ export const getPostInterviewData = query({
     roomId: v.string(),
   },
   handler: async (ctx, { roomId }) => {
+    const roomRecord = await ctx.db
+      .query("interview_rooms")
+      .filter((q) => q.eq(q.field("roomId"), roomId))
+      .first();
+
+    if (!roomRecord) {
+      return null;
+    }
+
     const final_data = await ctx.db
       .query("final_data")
       .filter((q) => q.eq(q.field("roomId"), roomId))
@@ -115,7 +142,11 @@ export const getPostInterviewData = query({
       `Post interview data roomId: ${roomId} and record: ${final_data?._id}`
     );
 
-    return final_data;
+    if (!final_data) {
+      return null;
+    }
+
+    return { ...roomRecord, ...final_data };
   },
 });
 
@@ -160,3 +191,6 @@ export const getUserByEmail = query({
       .first();
   },
 });
+
+
+// For code editors edits

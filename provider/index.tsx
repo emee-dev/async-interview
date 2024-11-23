@@ -8,6 +8,7 @@ import {
   SuperVizRoomProvider,
   VideoConference,
 } from "@superviz/react-sdk";
+import { ConvexQueryClient } from "@convex-dev/react-query";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 
@@ -27,7 +28,17 @@ type Participant = {
 };
 
 const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
-const queryClient = new QueryClient();
+
+const convexQueryClient = new ConvexQueryClient(convex);
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      queryKeyHashFn: convexQueryClient.hashFn(),
+      queryFn: convexQueryClient.queryFn(),
+    },
+  },
+});
+convexQueryClient.connect(queryClient);
 
 const Provider = ({ children }: { children: React.ReactNode }) => {
   const context = useSuperVizContext();
@@ -54,7 +65,6 @@ const Provider = ({ children }: { children: React.ReactNode }) => {
             <Realtime />
 
             {/* Manually enable the video chat */}
-            {/* Could not find a way to do earlier. */}
             {context.isVideoEnabled && (
               <VideoConference
                 // devices={{ videoInput: false, audioInput: false, audioOutput: false }}
