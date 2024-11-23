@@ -3,13 +3,20 @@ import { v } from "convex/values";
 
 export default defineSchema(
   {
+    users: defineTable({
+      email: v.string(),
+      first_name: v.string(),
+      last_name: v.string(),
+      kindeId: v.string(),
+    }),
+
     interview_rooms: defineTable({
       roomId: v.string(),
       position: v.string(),
       participants: v.array(
         v.object({
           email: v.string(),
-          given_name: v.string(),
+          first_name: v.string(),
           role: v.union(v.literal("interviewer"), v.literal("interviewee")),
         })
       ),

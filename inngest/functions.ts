@@ -10,6 +10,7 @@ import InterviewCreated from "@/emails/InterviewCreated";
 import InterviewReport from "@/emails/InterviewReport";
 import { env } from "@/lib/env";
 import { CreateReport } from "@/app/api/route";
+import { User } from "@/app/api/webhook/route";
 
 type Recording = {
   uuid: string;
@@ -184,8 +185,8 @@ export const createRoom = inngest.createFunction(
         subject: "Interview initiated",
         html: await render(
           InterviewCreated({
-            interviewerName: interviewer.given_name,
-            intervieweeName: interviewee.given_name,
+            interviewerName: interviewer.first_name,
+            intervieweeName: interviewee.first_name,
             interviewRoomLink: `${APP_BASE_URL}/room/${payload.roomId}`,
           })
         ),
@@ -198,6 +199,8 @@ export const createRoom = inngest.createFunction(
 
       return data;
     });
+
+    return notifyRoomCreated;
   }
 );
 
@@ -322,8 +325,8 @@ export const generateReport = inngest.createFunction(
         subject: "Interview report generated.",
         html: await render(
           InterviewReport({
-            interviewerName: interviewer.given_name,
-            intervieweeName: interviewee.given_name,
+            interviewerName: interviewer.first_name,
+            intervieweeName: interviewee.first_name,
             reportLink: `${APP_BASE_URL}/interview/${saveFinalReport._id}`,
           })
         ),
@@ -341,35 +344,28 @@ export const generateReport = inngest.createFunction(
   }
 );
 
-// export const sendDemoEmail = inngest.createFunction(
-//   { id: "demo-interview" },
-//   { event: "interview/interview.create" },
-//   async ({ event, step }: Context<Inngest<{ id: string }>>) => {
-//     const emailRoomCreated = await step.run("email_room_created", async () => {
-//       // send email to all room participants of the newly created room (interview).
-//       // createRoom.participants
+export const handleUserCreateEvent = inngest.createFunction(
+  { id: "kinde-webhook" },
+  { event: "webhook/user.create" },
+  async ({ event, step }: Context<Inngest<{ id: string }>>) => {
+    const payload = event.data as User;
 
-//       const { error, data } = await resend.emails.send({
-//         from: "onboarding@resend.dev",
-//         to: "emmanuelajike2000@gmail.com",
-//         subject: "Interview created.",
-//         html: await render(
-//           InterviewCreated({
-//             intervieweeName: "Emmanuel",
-//             interviewerName: "Ann",
-//             interviewRoomLink: "http://localhost:3000/room",
-//           })
-//         ),
-//       });
+    return await step.run("kinde_create_user", async () => {
+      const record = await fetchMutation(api.interview.upsertUserRecord, {
+        email: payload.email,
+        first_name: payload.first_name,
+        last_name: payload.last_name,
+        kindeId: payload.kindeId,
+      });
 
-//       if (error) {
-//         // error.name === ""
-//         throw error;
-//       }
+      if (!record) {
+        throw new AppError(
+          "Unable to insert record, retrying.",
+          "UNABLE_TO_CREATE_RECORD"
+        );
+      }
 
-//       return data;
-//     });
-
-//     return emailRoomCreated;
-//   }
-// );
+      return record;
+    });
+  }
+);

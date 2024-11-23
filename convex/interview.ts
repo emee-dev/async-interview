@@ -13,7 +13,7 @@ export const createRoom = mutation({
     participants: v.array(
       v.object({
         email: v.string(),
-        given_name: v.string(),
+        first_name: v.string(),
         role: v.union(v.literal("interviewer"), v.literal("interviewee")),
       })
     ),
@@ -116,5 +116,35 @@ export const getPostInterviewData = query({
     );
 
     return final_data;
+  },
+});
+
+export const upsertUserRecord = mutation({
+  args: {
+    email: v.string(),
+    first_name: v.string(),
+    last_name: v.string(),
+    kindeId: v.string(),
+  },
+  handler: async (ctx, { email, first_name, kindeId, last_name }) => {
+    const userRecord = await ctx.db
+      .query("users")
+      .filter((q) =>
+        q.add(q.eq(q.field("email"), email), q.eq(q.field("kindeId"), kindeId))
+      )
+      .first();
+
+    if (!userRecord) {
+      const createRecord = await ctx.db.insert("users", {
+        email,
+        kindeId,
+        first_name,
+        last_name,
+      });
+
+      return await ctx.db.get(createRecord);
+    }
+
+    return userRecord;
   },
 });
