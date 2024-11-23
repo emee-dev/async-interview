@@ -416,12 +416,8 @@
 import {
   RegisterLink,
   LoginLink,
+  LogoutLink
 } from "@kinde-oss/kinde-auth-nextjs/components";
-
-// Sign up ->
-// Dashboard -> view previous interviews
-// Login -> Dashboard -> view previous interviews
-// After interview -> click submit (grab record)
 
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Code, Users, Zap } from "lucide-react";

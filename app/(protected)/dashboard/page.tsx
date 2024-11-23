@@ -1,26 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
+import { CreateReport } from "@/app/api/route";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -30,12 +12,40 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Search, Plus, Menu } from "lucide-react";
-import { formatDistanceToNow, parseISO } from "date-fns";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { api } from "@/convex/_generated/api";
+import { generateId } from "@/lib/utils";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import {
+  LogoutLink
+} from "@kinde-oss/kinde-auth-nextjs/components";
+import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
+import { useConvex } from "convex/react";
+import { formatDistanceToNow, parseISO } from "date-fns";
+import { Menu, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
 // Mock data for interviews
 const interviews = [
@@ -76,65 +86,99 @@ const interviews = [
   },
 ];
 
-// type User = {
-//   email: "emmanuelajike2000@gmail.com";
-//   family_name: "Ajike";
-//   given_name: "Emmanuel";
-//   id: "kp_a4afe8716e454e5490295c765a3f06ea";
-//   picture: "https://lh3.googleusercontent.com/a/ACg8ocIIjkK57Z-K7mswSGLU8wCOjGa4BjdtFR6UWmFhcxm2jhDWq9JC=s96-c";
-// };
-type User = {
-  email: string | null;
-  family_name: string | null;
-  given_name: string | null;
-  id: string;
-  picture: string | null;
-};
+const FormSchema = z.object({
+  position: z.string().min(1),
+  intervieweeEmail: z.string().min(1),
+});
 
 export default function InterviewDashboard() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [intervieweeEmail, setIntervieweeEmail] = useState("");
-  const [user, setUser] = useState<User | null>(null);
-
+  const [interviewerEmail, setInterviewerEmail] = useState<string | null>(null);
   const { getUser, isLoading, isAuthenticated } = useKindeBrowserClient();
+  const convex = useConvex();
+
+  const form = useForm<z.infer<typeof FormSchema>>({
+    resolver: zodResolver(FormSchema),
+    defaultValues: {
+      intervieweeEmail: "",
+      position: "",
+    },
+  });
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
       const user = getUser();
 
       if (user && user.email) {
-        setUser(user);
+        setInterviewerEmail(user.email);
         console.log("user", user);
       }
     }
   }, [isLoading, isAuthenticated]);
 
-  const filteredInterviews = interviews.filter(
-    (interview) =>
-      interview.candidate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      interview.position.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   const { isPending, mutate } = useMutation({
     mutationKey: ["create_interview"],
-    mutationFn: async () => {
-      const req = await axios.post("/", {});
+    mutationFn: async (args: {
+      interviewerEmail: string | null;
+      intervieweeEmail: string;
+      position: string;
+    }) => {
+      if (!args.interviewerEmail) {
+        return Promise.reject("Authentication error, please login.");
+      }
+
+      const [interviewer, interviewee] = await Promise.all([
+        convex.query(api.interview.getUserByEmail, {
+          email: args.interviewerEmail,
+        }),
+        convex.query(api.interview.getUserByEmail, {
+          email: args.intervieweeEmail,
+        }),
+      ]);
+
+      if (!interviewer || !interviewee) {
+        return Promise.reject(new Error("Interviewee does not exist."));
+      }
+
+      const createRoomArgs: CreateReport = {
+        position: args.position,
+        roomId: generateId(7),
+        participants: [
+          {
+            email: interviewer.email,
+            first_name: interviewer.first_name,
+            role: "interviewer",
+          },
+          {
+            email: interviewee.email,
+            first_name: interviewee.first_name,
+            role: "interviewee",
+          },
+        ],
+      };
+
+      const req = await axios.post("/api", createRoomArgs);
     },
   });
 
-  const handleInvite = () => {
-    // Here you would typically send the invite to the backend
-    console.log("Sending invite to:", intervieweeEmail);
-    setIntervieweeEmail("");
+  const onSubmit = (data: z.infer<typeof FormSchema>) => {
+    mutate({
+      intervieweeEmail: data.intervieweeEmail,
+      position: data.position,
+      interviewerEmail,
+    });
   };
 
   return (
     <div className="container mx-auto py-4 px-4 sm:px-6 lg:px-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <h1 className="text-2xl sm:text-3xl font-bold">Interview Dashboard</h1>
+
+        <LogoutLink postLogoutRedirectURL="/">
+          <Button>Logout</Button>
+        </LogoutLink>
         <Dialog>
           <DialogTrigger asChild>
-            <Button className="w-full sm:w-auto">
+            <Button className="w-full sm:w-auto" size="sm">
               <Plus className="mr-2 h-4 w-4" /> New Interview
             </Button>
           </DialogTrigger>
@@ -146,7 +190,10 @@ export default function InterviewDashboard() {
                 session.
               </DialogDescription>
             </DialogHeader>
-            <div className="grid py-2">
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="grid gap-y-2 py-2"
+            >
               <div className="items-center space-y-2">
                 <Label htmlFor="interviewee-email" className="text-right">
                   Email
@@ -154,45 +201,30 @@ export default function InterviewDashboard() {
                 <Input
                   id="interviewee-email"
                   placeholder="interviewee@example.com"
-                  value={intervieweeEmail}
-                  onChange={(e) => setIntervieweeEmail(e.target.value)}
                   className="col-span-3"
+                  {...form.register("intervieweeEmail", { required: true })}
                 />
               </div>
-            </div>
-            <div className="grid py-2">
-              <div className=" items-center space-y-2">
-                <Label htmlFor="role" className="text-right">
+              <div className="items-center space-y-2">
+                <Label htmlFor="position" className="text-right">
                   Role
                 </Label>
                 <Input
-                  id="role"
+                  id="position"
                   placeholder="eg Software Developer"
-                  value={intervieweeEmail}
-                  onChange={(e) => setIntervieweeEmail(e.target.value)}
+                  {...form.register("position", { required: true })}
                   className="col-span-3"
                 />
               </div>
-            </div>
-            <DialogFooter>
-              <Button onClick={handleInvite} type="submit">
-                Send Invite
-              </Button>
-            </DialogFooter>
+              <DialogFooter className="mt-2">
+                <Button type="submit">Send Invite</Button>
+              </DialogFooter>
+            </form>
           </DialogContent>
         </Dialog>
       </div>
 
-      <div className="flex items-center space-x-2 mb-8">
-        {/* <Search className="h-5 w-5 text-gray-500" />
-        <Input
-          type="search"
-          placeholder="Search interviews..."
-          className="w-full sm:max-w-sm"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        /> */}
-      </div>
+      <div className="flex items-center space-x-2 mb-8" />
 
       <div className="overflow-x-auto">
         <Table>
@@ -208,7 +240,7 @@ export default function InterviewDashboard() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredInterviews.map((interview) => (
+            {interviews.map((interview) => (
               <TableRow key={interview.id}>
                 <TableCell className="font-medium">
                   {interview.candidate}

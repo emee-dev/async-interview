@@ -36,10 +36,10 @@ type KindeCreateUserEvent = JwtPayload & {
   type: "user.created";
 };
 
-import jwksClient from "jwks-rsa";
-import jwt from "jsonwebtoken";
-import type { JwtPayload } from "jsonwebtoken";
 import { env } from "@/lib/env";
+import type { JwtPayload } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
+import jwksClient from "jwks-rsa";
 
 const client = jwksClient({
   jwksUri: `${env.KINDE_ISSUER_URL}/.well-known/jwks.json`,

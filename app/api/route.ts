@@ -45,6 +45,10 @@ export const POST = async (req: Request) => {
         participants: params.participants,
       } as CreateReport,
     });
+
+    return Response.json({
+      message: "Creating room please, check your email.",
+    });
   } catch (error) {
     console.error(error);
     return Response.json({ message: "Internal server error.", data: null });
