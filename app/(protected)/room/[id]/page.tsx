@@ -28,7 +28,7 @@ import {
   useQuery,
 } from "convex/react";
 import { Loader, Play, Save } from "lucide-react";
-import { notFound } from "next/navigation";
+import { notFound, useRouter } from "next/navigation";
 import { Suspense, useEffect, useLayoutEffect, useState } from "react";
 
 type PistonResponse = {
@@ -85,6 +85,7 @@ const customTheme = EditorView.theme({
 
 export default function AsyncInterviewRoom({ params }: ComponentProps) {
   const { getUser, isLoading, isAuthenticated } = useKindeBrowserClient();
+  const router = useRouter();
   const [givenName, setGivenName] = useState<string | null>(null);
   const [userType, setUserType] = useState<
     "interviewer" | "interviewee" | null
@@ -98,6 +99,12 @@ export default function AsyncInterviewRoom({ params }: ComponentProps) {
     api.interview.getRoomById,
     params.id ? { roomId: params.id } : "skip"
   );
+
+  useEffect(() => {
+    if (roomData && roomData.status === "concluded") {
+      router.push("/dashboard");
+    }
+  }, [roomData]);
 
   useLayoutEffect(() => {
     if (params.id && givenName) {
@@ -470,9 +477,15 @@ function IntervieweeView({ roomId }: { roomId: string }) {
       <nav className="bg-primary text-primary-foreground p-4 flex justify-between items-center">
         <h1 className="text-lg font-bold">Async Interview</h1>
         <div className="flex items-center gap-x-2">
-          {roomData?.status !== "in-progress" && (
+          {roomData?.status !== "pending" && (
             <div className="text-base text-red-400">
               Interview has not started.
+            </div>
+          )}
+
+          {roomData?.status !== "concluded" && (
+            <div className="text-base text-red-400">
+              Interview has concluded.
             </div>
           )}
 
