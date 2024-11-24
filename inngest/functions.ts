@@ -247,8 +247,8 @@ export const generateReport = inngest.createFunction(
 
       if (!res) {
         throw new AppError(
-          `Error creating editor state. RoomId: ${payload.roomId}`,
-          "UNABLE_TO_CREATE_RECORD"
+          `Error finding room with roomId: ${payload.roomId}, retrying.`,
+          "RECORD_NOT_FOUND"
         );
       }
 

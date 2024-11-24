@@ -192,7 +192,7 @@ export const upsertUserRecord = mutation({
     const userRecord = await ctx.db
       .query("users")
       .filter((q) =>
-        q.add(q.eq(q.field("email"), email), q.eq(q.field("kindeId"), kindeId))
+        q.and(q.eq(q.field("email"), email), q.eq(q.field("kindeId"), kindeId))
       )
       .first();
 
