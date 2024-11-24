@@ -11,7 +11,7 @@ export default function NotFound() {
           404 - Not Found
         </h1>
         <p className="text-lg text-muted-foreground">
-          Oops! The page you're looking for doesn't exist or has been moved.
+         {"Oops! The page you're looking for doesn't exist or has been moved."} 
         </p>
         <Button asChild className="mt-4">
           <Link href="/" className="inline-flex items-center">
