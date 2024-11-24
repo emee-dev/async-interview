@@ -1,10 +1,20 @@
-## Introduction
+## Introduction  
 
-Async interview is an AI interview application, built to facilite easy and efficient interviews. Given the current needs of the job market employers seeking for the best candidates and job seekers searching for suitable jobs that fit that skill levels, this application addresses issues such as lack of feedback after interview, efficient way to simply extract some key insights from the interview without breaking bank and wasting time. The application makes use of AssemblyAI powerful LLM powered speech to text to generate transcripts, post interview reports. This is very powerful because now job seekers are able to get some sort of feedback on potential strengths and weaknesses thanks to the resilient nature of the application thanks to background jobs resulting in an improvement on their overall chances in the job hunt. It is very fault tolerant, with a focus on user experience.
+**Async Interview** is an AI-powered interview application designed to facilitate seamless and efficient interviews. In today's competitive job market, where employers seek the best candidates and job seekers strive to find roles that align with their skills, Async Interview addresses several key challenges:  
 
-## Getting Started
+1. **Lack of feedback after interviews**  
+2. **Extracting key insights efficiently and affordably**  
+3. **Saving time for both employers and candidates**  
 
-First, run the development server:
+The application leverages **AssemblyAI's powerful LLM-powered speech-to-text capabilities** to generate accurate transcripts and insightful post-interview reports. This innovation benefits job seekers by providing constructive feedback on their strengths and weaknesses, ultimately improving their chances in the job market.  
+
+Async Interview is built with fault tolerance and a strong focus on user experience. Thanks to **resilient background job processing**, the app ensures smooth performance and reliable results for all users.
+
+---
+
+## Getting Started  
+
+To start the development server, use one of the following commands:  
 
 ```bash
 npm run dev
@@ -14,55 +24,54 @@ yarn dev
 pnpm dev
 # or
 bun dev
+```  
+
+Then, open [http://localhost:3000](http://localhost:3000) in your browser to view the application.  
+
+You can begin editing the code by modifying `app/page.tsx`. The page will automatically update as you make changes.  
+
+This project utilizes [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) for font optimization and includes [Geist](https://vercel.com/font), a modern font family by Vercel.
+
+---
+
+## Environment Variables  
+
+To properly test and deploy the application, configure the necessary environment variables. Copy `.env.example` to `.env.local` in both the root folder and the backend folder. Below is the list of required variables:  
+
+```bash
+# Superviz
+NEXT_PUBLIC_SUPERVIZ_DEVELOPER_TOKEN=""
+SUPERVIZ_CLIENT_ID=""
+SUPERVIZ_SECRET_KEY=""
+
+# Deployment used by `npx convex dev`
+CONVEX_DEPLOYMENT="" # team: infinite-loop, project: live-interviewer
+NEXT_PUBLIC_CONVEX_URL=""
+
+# AssemblyAI
+ASSEMBLYAI_API_KEY=""
+
+# Kinde API
+KINDE_CLIENT_ID=""
+KINDE_CLIENT_SECRET=""
+KINDE_ISSUER_URL="https://<issuer_url>.kinde.com"
+KINDE_SITE_URL=http://localhost:3000
+KINDE_POST_LOGOUT_REDIRECT_URL=http://localhost:3000
+KINDE_POST_LOGIN_REDIRECT_URL=http://localhost:3000/dashboard
+
+# Resend
+RESEND_API_KEY=""
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Technologies  
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The following technologies were integral to the development of Async Interview:  
 
-## Environment Variables
-
-The following variables are necessary to be able to properly test and deploy the application. Please copy `.env.example` to `.env.local` into the root folder and backend folder.
-
-```sh
-    # Superviz
-    NEXT_PUBLIC_SUPERVIZ_DEVELOPER_TOKEN=""
-    SUPERVIZ_CLIENT_ID=""
-    SUPERVIZ_SECRET_KEY=""
-
-
-    # Deployment used by `npx convex dev`
-    CONVEX_DEPLOYMENT="" # team: infinite-loop, project: live-interviewer
-
-    NEXT_PUBLIC_CONVEX_URL=""
-
-
-    # Assembly AI
-    ASSEMBLYAI_API_KEY=""
-
-
-    # Kinde API
-    KINDE_CLIENT_ID=""
-    KINDE_CLIENT_SECRET=""
-    KINDE_ISSUER_URL="https://<issuer_url>.kinde.com"
-    KINDE_SITE_URL=http://localhost:3000
-    KINDE_POST_LOGOUT_REDIRECT_URL=http://localhost:3000
-    KINDE_POST_LOGIN_REDIRECT_URL=http://localhost:3000/dashboard
-
-
-    # Resend
-    RESEND_API_KEY=""
-```
-
-## Technologies
-
-The following technologies facilited the making of this app.
-
-- AssemblyAI: transcripts, speech to text, AI insights (markdown)
-- Kinde Auth: Authentication
-- Inngest.dev: Background jobs.
-- Convex.dev: Database
-- Superviz: Realtime video conferencing
-- Resend: Email
+- **AssemblyAI**: Speech-to-text processing, transcripts, and AI-powered insights.  
+- **Kinde Auth**: Secure and efficient authentication.  
+- **Inngest.dev**: Background job processing for reliability and scalability.  
+- **Convex.dev**: Real-time database management.  
+- **Superviz**: Real-time video conferencing capabilities.  
+- **Resend**: Email delivery service.
