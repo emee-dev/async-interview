@@ -248,7 +248,7 @@ export default function InterviewDashboard() {
               No interviews scheduled yet.
             </p>
             <p className="text-sm text-muted-foreground mt-2">
-              Click on "New Interview" to schedule one.
+              {'Click on "New Interview" to schedule one.'}
             </p>
           </div>
         ) : (
@@ -264,7 +264,6 @@ export default function InterviewDashboard() {
                 <TableHead className="hidden sm:table-cell">Position</TableHead>
                 <TableHead className="w-[120px] sm:w-[150px]">When</TableHead>
                 <TableHead className="w-[120px]">Status</TableHead>
-                {/* <TableHead className="w-[100px]">Action</TableHead> */}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -287,11 +286,6 @@ export default function InterviewDashboard() {
                   <TableCell>
                     <Badge variant={"default"}>{interview.status}</Badge>
                   </TableCell>
-                  {/* <TableCell>
-                    <Button variant="outline" size="icon">
-                      <Menu className="size-4" />
-                    </Button>
-                  </TableCell> */}
                 </TableRow>
               ))}
             </TableBody>
