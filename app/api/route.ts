@@ -43,6 +43,7 @@ export const POST = async (req: Request) => {
       data: {
         roomId: params.roomId,
         position: params.position,
+        roomStatus: params.roomStatus,
         interviewer: params.interviewer,
         interviewee: params.interviewee,
       } as CreateReport,

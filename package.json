@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "ts:lint": "tsc --noEmit",
-    "inngest": "pnpm inngest-cli dev",
+    "inngest:dev": "pnpm dlx inngest-cli@latest dev",
     "email": "email dev"
   },
   "dependencies": {

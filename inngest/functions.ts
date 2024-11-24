@@ -257,6 +257,13 @@ export const generateReport = inngest.createFunction(
         )
       );
 
+      const isErrorPresent = transcripts.find((item) => item.error);
+
+      // Find any occurance of an error, then retry.
+      if (isErrorPresent) {
+        throw new Error(isErrorPresent.error);
+      }
+
       return transcripts;
     });
 
