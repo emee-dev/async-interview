@@ -49,6 +49,27 @@ export const createRoom = mutation({
   },
 });
 
+export const updateRoomState = mutation({
+  args: {
+    roomId: v.string(),
+    status: v.union(v.literal("in-progress"), v.literal("concluded")),
+  },
+  handler: async (ctx, { roomId, status }) => {
+    const room = await ctx.db
+      .query("interview_rooms")
+      .filter((q) => q.eq(q.field("roomId"), roomId))
+      .first();
+
+    if (!room) {
+      console.warn(`Could not find room with roomId: ${roomId}`);
+      return null;
+    }
+
+    await ctx.db.patch(room._id, { status });
+    return room;
+  },
+});
+
 export const getRoomById = query({
   args: {
     roomId: v.string(),

@@ -29,7 +29,11 @@ import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "@/hooks/use-toast";
 import { notFound } from "next/navigation";
-import { useQuery, useMutation as convexUseMutation } from "convex/react";
+import {
+  useQuery,
+  useMutation as convexUseMutation,
+  useConvex,
+} from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
 import { GenerateReport } from "@/app/api/route";
@@ -177,6 +181,7 @@ export default function AsyncInterviewRoom({ params }: ComponentProps) {
 
 function InterviewerView({
   roomId,
+  roomStatus,
 }: {
   roomId: string;
   roomStatus: string | undefined;
@@ -184,6 +189,7 @@ function InterviewerView({
   const queryCodeEditor = useQuery(api.code_editor.queryCodeEditor, { roomId });
   const video = useVideo();
   const superviz = useSuperviz();
+  const convex = useConvex();
   const { isPending, error, data, mutate } = useMutation({
     mutationKey: ["end_interview"],
     mutationFn: async (args: GenerateReport) => {
@@ -225,8 +231,12 @@ function InterviewerView({
           <Button
             variant="secondary"
             size={"sm"}
-            onClick={() => {
+            onClick={async () => {
               video.toggleRecording();
+              await convex.mutation(api.interview.updateRoomState, {
+                roomId,
+                status: "in-progress",
+              });
             }}
           >
             <Play className="mr-1 size-4" /> Begin Interview
@@ -235,10 +245,15 @@ function InterviewerView({
           <Button
             variant="destructive"
             size={"sm"}
-            onClick={() => {
+            onClick={async () => {
               superviz.stopRoom();
               video.toggleRecording();
               mutate({ roomId });
+
+              await convex.mutation(api.interview.updateRoomState, {
+                roomId,
+                status: "concluded",
+              });
             }}
           >
             <Save className="mr-1 size-4" /> End Interview
