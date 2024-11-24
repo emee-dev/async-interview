@@ -96,7 +96,6 @@ export default function AsyncInterviewRoom({ params }: ComponentProps) {
 
   const context = useSuperVizContext();
   const superviz = useSuperviz();
-  const video = useVideo();
 
   const roomData = useQuery(
     api.interview.getRoomById,
@@ -121,11 +120,11 @@ export default function AsyncInterviewRoom({ params }: ComponentProps) {
   }, [params, givenName]);
 
   // initialise the video call
-  // useEffect(() => {
-  //   if (context.roomId && context.group) {
-  //     superviz.startRoom();
-  //   }
-  // }, [context]);
+  useEffect(() => {
+    if (context.roomId && context.group) {
+      superviz.startRoom();
+    }
+  }, [context]);
 
   useEffect(() => {
     if (!isLoading && isAuthenticated && roomData) {
