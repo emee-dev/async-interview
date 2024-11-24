@@ -129,17 +129,21 @@ const createPrompt = (objective: string, additionalInstructions?: string) => {
 };
 
 async function recordings() {
-  const URL = "https://api.superviz.com/recording";
+  try {
+    const URL = "https://api.superviz.com/recording";
 
-  const reqdata = await axios.get(URL, {
-    headers: {
-      "Content-Type": "application/json",
-      client_id: SUPERVIZ_CLIENT_ID,
-      secret: SUPERVIZ_SECRET_KEY,
-    },
-  });
+    const reqdata = await axios.get(URL, {
+      headers: {
+        "Content-Type": "application/json",
+        client_id: SUPERVIZ_CLIENT_ID,
+        secret: SUPERVIZ_SECRET_KEY,
+      },
+    });
 
-  return reqdata.data as RecordResponse;
+    return reqdata.data as RecordResponse;
+  } catch (err: any) {
+    return null;
+  }
 }
 
 export const createRoom = inngest.createFunction(
@@ -259,6 +263,13 @@ export const generateReport = inngest.createFunction(
       .run("get_recordings", async () => {
         const records = await recordings();
 
+        if (!records) {
+          throw new RecordError(
+            "Could not find recording.",
+            "NO_RECORDING_FOUND"
+          );
+        }
+
         const findRecords = records.data.filter(
           (item) => item.roomId === payload.roomId
         );
@@ -360,7 +371,7 @@ export const generateReport = inngest.createFunction(
       return data;
     });
 
-    const emailReports = await step.run("email_reports", async () => {
+    await step.run("email_reports", async () => {
       const interviewer = getRoom.interviewer;
       const interviewee = getRoom.interviewee;
 

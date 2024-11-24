@@ -31,8 +31,8 @@ import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs/components";
 import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
 import { useConvex, usePaginatedQuery } from "convex/react";
-import { formatDistanceToNow, parseISO } from "date-fns";
-import { Loader, Menu, Plus } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { Loader, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -46,7 +46,11 @@ export default function InterviewDashboard() {
   const convex = useConvex();
   const { toast } = useToast();
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const { getUser, isLoading, isAuthenticated } = useKindeBrowserClient();
+  const {
+    getUser,
+    isLoading: isAuthLoading,
+    isAuthenticated,
+  } = useKindeBrowserClient();
 
   const {
     results,
@@ -59,8 +63,6 @@ export default function InterviewDashboard() {
     { initialNumItems: 5 }
   );
 
-  console.log("results", results);
-
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -70,14 +72,14 @@ export default function InterviewDashboard() {
   });
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
+    if (!isAuthLoading && isAuthenticated) {
       const user = getUser();
 
       if (user && user.email) {
         setUserEmail(user.email);
       }
     }
-  }, [isLoading, isAuthenticated]);
+  }, [isAuthLoading, isAuthenticated]);
 
   const { isPending, mutate, error } = useMutation({
     mutationKey: ["create_interview"],
@@ -236,62 +238,74 @@ export default function InterviewDashboard() {
       <div className="flex items-center space-x-2 mb-8" />
 
       <div className="overflow-x-auto flex-1 min-h-[230px]">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[150px] sm:w-[200px]">
-                Candidate
-              </TableHead>
-              <TableHead className="hidden sm:table-cell">Position</TableHead>
-              <TableHead className="w-[120px] sm:w-[150px]">When</TableHead>
-              <TableHead className="w-[120px]">Status</TableHead>
-              <TableHead className="w-[100px]">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {status === "Exhausted" ? (
-              <TableRow className="flex justify-center w-full items-center">
-                <TableCell className="font-medium w-full">
-                  No data available
-                </TableCell>
+        {isLoadingResults || isAuthLoading ? (
+          <div className="flex justify-center items-center h-[230px]">
+            <Loader className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : results.length === 0 ? (
+          <div className="flex flex-col justify-center items-center h-[230px] text-center">
+            <p className="text-muted-foreground">
+              No interviews scheduled yet.
+            </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Click on "New Interview" to schedule one.
+            </p>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[150px] sm:w-[200px]">
+                  Candidate
+                </TableHead>
+                <TableHead className="hidden sm:table-cell w-[150px] sm:w-[200px]">
+                  Interviewer
+                </TableHead>
+                <TableHead className="hidden sm:table-cell">Position</TableHead>
+                <TableHead className="w-[120px] sm:w-[150px]">When</TableHead>
+                <TableHead className="w-[120px]">Status</TableHead>
+                {/* <TableHead className="w-[100px]">Action</TableHead> */}
               </TableRow>
-            ) : (
-              results.map((interview) => (
+            </TableHeader>
+            <TableBody>
+              {results.map((interview) => (
                 <TableRow key={interview._id}>
                   <TableCell className="font-medium">
                     {interview.interviewee.first_name}
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    {interview.interviewer.first_name}
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
                     {interview.position}
                   </TableCell>
                   <TableCell>
-                    {formatDistanceToNow(
-                      parseISO(interview._creationTime.toString()),
-                      {
-                        addSuffix: true,
-                      }
-                    )}
+                    {formatDistanceToNow(new Date(interview._creationTime), {
+                      addSuffix: true,
+                    })}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={"default"}>{"interview.status"}</Badge>
+                    <Badge variant={"default"}>{interview.status}</Badge>
                   </TableCell>
-                  <TableCell>
+                  {/* <TableCell>
                     <Button variant="outline" size="icon">
                       <Menu className="size-4" />
                     </Button>
-                  </TableCell>
+                  </TableCell> */}
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </div>
 
-      <div className="mt-4">
-        <Button className="w-full" onClick={() => loadMore(5)}>
-          Loadmore
-        </Button>
-      </div>
+      {!isLoadingResults && results.length > 0 && status !== "Exhausted" && (
+        <div className="mt-4">
+          <Button className="w-full" onClick={() => loadMore(5)}>
+            Load More
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

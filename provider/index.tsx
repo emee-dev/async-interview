@@ -76,7 +76,18 @@ const Provider = ({ children }: { children: React.ReactNode }) => {
                   left: 0,
                 }}
                 enableRecording={true}
+                devices={{
+                  audioInput: true,
+                  audioOutput: true,
+                  videoInput: true,
+                }}
                 styles={VideoConferenceStyles}
+                collaborationMode={{
+                  enabled: true,
+                  position: "right",
+                  modalPosition: "right",
+                  initialView: "list",
+                }}
                 onConnectionStatusChange={(status) =>
                   context.setConnectionStatus(status)
                 }

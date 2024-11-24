@@ -1,13 +1,8 @@
 "use client";
 
+import { GenerateReport } from "@/app/api/route";
 import { Button } from "@/components/ui/button";
-import { useSuperVizContext } from "@/context";
-import { generateId } from "@/lib/utils";
-import { useSuperviz, useVideo } from "@superviz/react-sdk";
-import dynamic from "next/dynamic";
-import { Suspense, useEffect, useLayoutEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Loader, Play, Save } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -15,29 +10,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { LANGUAGES, SNIPPETS } from "@/consts";
-import CodeMirror, { EditorView, Extension } from "@uiw/react-codemirror";
-import { vscodeDark } from "@uiw/codemirror-theme-vscode";
-import { oneDark } from "@codemirror/theme-one-dark";
-import {
-  loadLanguage,
-  langNames,
-  langs,
-} from "@uiw/codemirror-extensions-langs";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LANGUAGES, SNIPPETS } from "@/consts";
+import { useSuperVizContext } from "@/context";
+import { api } from "@/convex/_generated/api";
+import { toast, useToast } from "@/hooks/use-toast";
+import { oneDark } from "@codemirror/theme-one-dark";
+import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
+import { useSuperviz, useVideo } from "@superviz/react-sdk";
 import { useMutation } from "@tanstack/react-query";
+import { loadLanguage } from "@uiw/codemirror-extensions-langs";
+import CodeMirror, { EditorView } from "@uiw/react-codemirror";
 import axios from "axios";
-import { toast } from "@/hooks/use-toast";
-import { notFound } from "next/navigation";
 import {
-  useQuery,
   useMutation as convexUseMutation,
   useConvex,
+  useQuery,
 } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
-import { GenerateReport } from "@/app/api/route";
-import { useToast } from "@/hooks/use-toast";
+import { Loader, Play, Save } from "lucide-react";
+import { notFound } from "next/navigation";
+import { Suspense, useEffect, useLayoutEffect, useState } from "react";
 
 type PistonResponse = {
   language: string;
@@ -100,6 +92,7 @@ export default function AsyncInterviewRoom({ params }: ComponentProps) {
 
   const context = useSuperVizContext();
   const superviz = useSuperviz();
+  const { isReady } = useVideo();
 
   const roomData = useQuery(
     api.interview.getRoomById,
@@ -162,45 +155,83 @@ export default function AsyncInterviewRoom({ params }: ComponentProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center pt-32">
-        <div>Initializing room, please hold on.</div>
+        <div>Verifying user, please hold on.</div>
+      </div>
+    );
+  }
+
+  if (!isReady) {
+    return (
+      <div className="flex items-center justify-center pt-32">
+        <div>Intializing video feed, please hold on.</div>
       </div>
     );
   }
 
   return (
     <>
-      {userType === "interviewer" && (
-        <InterviewerView roomId={params.id} roomStatus={roomData?.status} />
-      )}
-      {userType === "interviewee" && (
-        <IntervieweeView roomId={params.id} roomStatus={roomData?.status} />
-      )}
+      {userType === "interviewer" && <InterviewerView roomId={params.id} />}
+      {userType === "interviewee" && <IntervieweeView roomId={params.id} />}
     </>
   );
 }
 
-function InterviewerView({
-  roomId,
-  roomStatus,
-}: {
-  roomId: string;
-  roomStatus: string | undefined;
-}) {
+function InterviewerView({ roomId }: { roomId: string }) {
+  const { toast } = useToast();
   const queryCodeEditor = useQuery(api.code_editor.queryCodeEditor, { roomId });
-  const video = useVideo();
+  const { toggleRecording, hangUp } = useVideo();
   const superviz = useSuperviz();
   const convex = useConvex();
-  const { isPending, error, data, mutate } = useMutation({
+
+  const updateRoom = useMutation({
+    mutationKey: ["update_room"],
+    mutationFn: async (args: {
+      roomId: string;
+      status: "in-progress" | "concluded";
+    }) => {
+      try {
+        const res = await convex.mutation(api.interview.updateRoomState, args);
+
+        if (!res) {
+          throw new Error("Unable to update room status, try again.");
+        }
+
+        toast({
+          title: "Interview status",
+          description:
+            args.status === "in-progress"
+              ? "Interview has started and room is recorded."
+              : "Interview has ended, thanks for today.",
+        });
+        return Promise.resolve(res);
+      } catch (error: any) {
+        toast({
+          title: "Interview status",
+          description: error.message,
+        });
+      }
+    },
+  });
+
+  const endInterview = useMutation({
     mutationKey: ["end_interview"],
     mutationFn: async (args: GenerateReport) => {
       try {
+        hangUp();
+        superviz.stopRoom();
+
         const req = await axios.put("/api", args);
 
         const res = req.data as { message: string };
 
+        updateRoom.mutate({
+          roomId,
+          status: "concluded",
+        });
+
         toast({
           title: "Scheduled results",
-          description: "Processing results, please your emails in a few mins.",
+          description: "Processing results, it will take some time.",
         });
 
         return Promise.resolve(res);
@@ -232,8 +263,8 @@ function InterviewerView({
             variant="secondary"
             size={"sm"}
             onClick={async () => {
-              video.toggleRecording();
-              await convex.mutation(api.interview.updateRoomState, {
+              toggleRecording();
+              updateRoom.mutate({
                 roomId,
                 status: "in-progress",
               });
@@ -246,14 +277,7 @@ function InterviewerView({
             variant="destructive"
             size={"sm"}
             onClick={async () => {
-              superviz.stopRoom();
-              video.toggleRecording();
-              mutate({ roomId });
-
-              await convex.mutation(api.interview.updateRoomState, {
-                roomId,
-                status: "concluded",
-              });
+              endInterview.mutate({ roomId });
             }}
           >
             <Save className="mr-1 size-4" /> End Interview
@@ -264,7 +288,7 @@ function InterviewerView({
       {/* Main content */}
       <div className="flex-grow flex w-screen overflow-hidden">
         <div className="flex-grow flex w-screen overflow-hidden">
-          <div className="grid grid-cols-2 w-full p-2 overflow-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 w-full p-2 overflow-auto">
             <Card className="h-full w-full bg-muted p-2 flex flex-col">
               <div className="mb-4 flex items-center justify-between">
                 <Select value={queryCodeEditor?.language} disabled>
@@ -340,16 +364,11 @@ function InterviewerView({
   );
 }
 
-function IntervieweeView({
-  roomId,
-}: {
-  roomId: string;
-  roomStatus: string | undefined;
-}) {
-  const [language, setLanguage] = useState<LanguageTypes>("javascript");
+function IntervieweeView({ roomId }: { roomId: string }) {
   const [stdOut, setStdOut] = useState("");
   const [stdErr, setStdError] = useState("");
   const [code, setCode] = useState<string>("");
+  const [language, setLanguage] = useState<LanguageTypes>("javascript");
   const [activeTab, setActiveTab] = useState<"stdout" | "stderr">("stdout");
 
   const mutateCodeEditor = convexUseMutation(api.code_editor.mutateCodeEditor);
@@ -424,8 +443,8 @@ function IntervieweeView({
   useEffect(() => {
     if (error) {
       toast({
-        variant: "default",
-        description: `Application Error: ${error.message}`,
+        title: "Code error",
+        description: `Error: ${error?.message}`,
       });
     }
   }, [error]);
@@ -434,19 +453,23 @@ function IntervieweeView({
     <div className="h-screen font-geistMono flex flex-col bg-background text-foreground">
       <nav className="bg-primary text-primary-foreground p-4 flex justify-between items-center">
         <h1 className="text-lg font-bold">Async Interview</h1>
-        <Button variant="secondary" size={"sm"}>
-          <Save className="mr-1 size-4" /> Quit
-        </Button>
+        <div className="flex items-center gap-x-2">
+          <div>Room is has not started.</div>
+          <Button variant="secondary" size={"sm"}>
+            <Save className="mr-1 size-4" /> Quit
+          </Button>
+        </div>
       </nav>
 
       {/* Main content */}
       <div className="flex-grow flex w-screen overflow-hidden">
         <div className="flex-grow flex w-screen overflow-hidden">
-          <div className="grid grid-cols-2 w-full p-2 overflow-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 w-full p-2 overflow-auto">
             <Card className="h-full w-full bg-muted p-2 flex flex-col">
               <div className="mb-4 flex items-center justify-between">
                 <Select
                   value={language}
+                  disabled={roomData?.status === "in-progress" ? false : true}
                   onValueChange={(value: LanguageTypes) => setLanguage(value)}
                 >
                   <SelectTrigger className="w-[180px]">
@@ -463,6 +486,7 @@ function IntervieweeView({
 
                 {!isPending && (
                   <Button
+                    disabled={roomData?.status === "in-progress" ? false : true}
                     onClick={() => {
                       mutate({
                         files: [
@@ -492,7 +516,7 @@ function IntervieweeView({
                     height="100%"
                     theme={[oneDark, customTheme]}
                     value={code}
-                    editable={roomData?.status === "in-progress" ? true : false}
+                    editable={roomData?.status !== "in-progress" ? false : true}
                     extensions={[loadLanguage(language) as any]}
                     onChange={(code) => setCode(code)}
                     className="text-base h-full w-full"
