@@ -4,7 +4,6 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "@fontsource/fira-code";
 import "./globals.css";
-// import { Fira_Code } from "next/font/google";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -16,15 +15,11 @@ const geistMono = localFont({
   variable: "--font-geist-mono",
   weight: "100 900",
 });
-// const firaCode = Fira_Code({
-//   display: "swap",
-//   weight: ["300", "400", "500", "600"],
-// });
 
 export const metadata: Metadata = {
-  title: "Live interviewer",
+  title: "Async interviewer",
   description:
-    "The interview experience, get detailed summary after each call.",
+    "Seamless interviews that makes sure everyone is satisfied at least.",
 };
 
 export default function RootLayout({

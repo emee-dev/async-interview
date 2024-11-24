@@ -48,11 +48,18 @@ export default function InterviewDashboard() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const { getUser, isLoading, isAuthenticated } = useKindeBrowserClient();
 
-  const { results, status, loadMore } = usePaginatedQuery(
+  const {
+    results,
+    status,
+    isLoading: isLoadingResults,
+    loadMore,
+  } = usePaginatedQuery(
     api.interview.getRoomsByEmail,
     userEmail !== null ? { email: userEmail } : "skip",
     { initialNumItems: 5 }
   );
+
+  console.log("results", results);
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
