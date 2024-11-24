@@ -11,6 +11,7 @@ import InterviewReport from "@/emails/InterviewReport";
 import { env } from "@/lib/env";
 import { CreateReport, GenerateReport } from "@/app/api/route";
 import { User } from "@/app/api/webhook/route";
+import { SNIPPETS } from "@/consts";
 
 type Recording = {
   uuid: string;
@@ -163,6 +164,32 @@ export const createRoom = inngest.createFunction(
       if (!res) {
         throw new AppError(
           `Error creating room. Id: ${payload.roomId}`,
+          "UNABLE_TO_CREATE_RECORD"
+        );
+      }
+
+      return res;
+    });
+
+    await step.run("create_editor_state", async () => {
+      const language = "javascript";
+
+      const res = await fetchMutation(
+        api.code_editor.mutateCodeEditor,
+        {
+          language,
+          stdOut: "",
+          stdErr: "",
+          activeTab: "stdout",
+          code: SNIPPETS[language],
+          roomId: createRoom.roomId,
+        },
+        { url: env.NEXT_PUBLIC_CONVEX_URL }
+      );
+
+      if (!res) {
+        throw new AppError(
+          `Error creating editor state. RoomId: ${payload.roomId}`,
           "UNABLE_TO_CREATE_RECORD"
         );
       }
