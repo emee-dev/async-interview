@@ -58,28 +58,21 @@ export const POST = async (req: Request) => {
   }
 };
 
-export type GenerateReport = Pick<
-  CreateReport,
-  "roomId" | "interviewer" | "interviewee"
->;
+export type GenerateReport = Pick<CreateReport, "roomId">;
 
 export const PUT = async (req: Request) => {
   try {
-    const params = (await req.json()) as CreateReport;
+    const params = (await req.json()) as GenerateReport;
 
     await inngest.send({
       name: "interview/interview.report",
       data: {
         roomId: params.roomId,
-        position: params.position,
-        roomStatus: params.roomStatus,
-        interviewer: params.interviewer,
-        interviewee: params.interviewee,
-      } as CreateReport,
+      } as GenerateReport,
     });
 
     return Response.json({
-      message: "Creating room please, check your email.",
+      message: "Generating reports, check your email.",
     });
   } catch (error) {
     console.error(error);

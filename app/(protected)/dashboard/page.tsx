@@ -23,7 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { api } from "@/convex/_generated/api";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { generateId } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
@@ -44,6 +44,7 @@ const FormSchema = z.object({
 
 export default function InterviewDashboard() {
   const convex = useConvex();
+  const { toast } = useToast();
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const { getUser, isLoading, isAuthenticated } = useKindeBrowserClient();
 

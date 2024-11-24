@@ -1,7 +1,7 @@
 import { api } from "@/convex/_generated/api";
 import { AssemblyAI } from "assemblyai";
 import axios from "axios";
-import { fetchMutation } from "convex/nextjs";
+import { fetchMutation, fetchQuery } from "convex/nextjs";
 import { Context, Inngest, NonRetriableError } from "inngest";
 import { inngest } from "./client";
 import { Resend } from "resend";
@@ -236,6 +236,25 @@ export const generateReport = inngest.createFunction(
   async ({ event, step }: Context<Inngest<{ id: string }>>) => {
     const payload = event.data as GenerateReport;
 
+    const getRoom = await step.run("get_room", async () => {
+      const res = await fetchQuery(
+        api.interview.getRoomById,
+        {
+          roomId: payload.roomId,
+        },
+        { url: env.NEXT_PUBLIC_CONVEX_URL }
+      );
+
+      if (!res) {
+        throw new AppError(
+          `Error creating editor state. RoomId: ${payload.roomId}`,
+          "UNABLE_TO_CREATE_RECORD"
+        );
+      }
+
+      return res;
+    });
+
     const getRecordings = await step
       .run("get_recordings", async () => {
         const records = await recordings();
@@ -342,8 +361,8 @@ export const generateReport = inngest.createFunction(
     });
 
     const emailReports = await step.run("email_reports", async () => {
-      const interviewer = payload.interviewer;
-      const interviewee = payload.interviewee;
+      const interviewer = getRoom.interviewer;
+      const interviewee = getRoom.interviewee;
 
       if (!interviewer || !interviewee) {
         throw new Error("Was unable to find the room participants.");

@@ -5,7 +5,7 @@ import { useSuperVizContext } from "@/context";
 import { generateId } from "@/lib/utils";
 import { useSuperviz, useVideo } from "@superviz/react-sdk";
 import dynamic from "next/dynamic";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useLayoutEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Loader, Save } from "lucide-react";
 import {
@@ -32,68 +32,8 @@ import { notFound } from "next/navigation";
 import { useQuery, useMutation as convexUseMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
-
-// const Chat = dynamic(() => import("@/components/chat"), {
-//   ssr: false,
-// });
-
-// export default function App() {
-//   const context = useSuperVizContext();
-//   const superviz = useSuperviz();
-// const video = useVideo()
-
-//   useEffect(() => {
-//     if (context) {
-//       const group = {
-//         id: `group-Interview`,
-//         name: `group-Interview`,
-//       };
-
-//       context.setRoomId("DEMO_ROOM");
-//       context.setGroup(group);
-//     }
-//   }, []);
-
-//   return (
-//     <div className="w-screen">
-//       <Button
-//         onClick={() => {
-//           const participant = {
-//             id: `participant-User1`,
-//             name: `participant-User1`,
-//           };
-
-//           context.setParticipant(participant);
-//         }}
-//       >
-//         Join as User1
-//       </Button>
-//       <Button
-//         onClick={() => {
-//           const participant = {
-//             id: `participant-User2`,
-//             name: `participant-User2`,
-//           };
-
-//           context.setParticipant(participant);
-//         }}
-//       >
-//         Join as User2
-//       </Button>
-
-//       <Button
-//         onClick={() => {
-//           superviz.startRoom();
-//           context.setIsVideoEnabled(true);
-//         }}
-//       >
-//         Start Room
-//       </Button>
-
-//       <Button onClick={async () => {}}>Get Recordings</Button>
-//     </div>
-//   );
-// }
+import { GenerateReport } from "@/app/api/route";
+import { useToast } from "@/hooks/use-toast";
 
 type PistonResponse = {
   language: string;
@@ -163,8 +103,20 @@ export default function AsyncInterviewRoom({ params }: ComponentProps) {
   );
 
   // set superviz video details
-  useEffect(() => {
-    if (context && params.id) {
+  // useEffect(() => {
+  //   if (context && params.id) {
+  //     const group = {
+  //       id: `group-Interview`,
+  //       name: `group-Interview`,
+  //     };
+
+  //     context.setRoomId(params.id);
+  //     context.setGroup(group);
+  //   }
+  // }, [params]);
+
+  useLayoutEffect(() => {
+    if (params.id) {
       const group = {
         id: `group-Interview`,
         name: `group-Interview`,
@@ -176,12 +128,12 @@ export default function AsyncInterviewRoom({ params }: ComponentProps) {
   }, [params]);
 
   // initialise the video call
-  // useEffect(() => {
-  //   if (context.roomId && context.group) {
-  //     superviz.startRoom();
-  //     context.setIsVideoEnabled(true);
-  //   }
-  // }, [context]);
+  useEffect(() => {
+    if (context.roomId && context.group) {
+      superviz.startRoom();
+      context.setIsVideoEnabled(true);
+    }
+  }, [context]);
 
   // get user email
   useEffect(() => {
@@ -218,75 +170,71 @@ export default function AsyncInterviewRoom({ params }: ComponentProps) {
     );
   }
 
-  //
-
   return (
     <>
-      {userType === "interviewer" && <InterviewerView roomId={params.id} />}
-      {userType === "interviewee" && <IntervieweeView roomId={params.id} />}
+      {userType === "interviewer" && (
+        <InterviewerView roomId={params.id} roomStatus={roomData?.status} />
+      )}
+      {userType === "interviewee" && (
+        <IntervieweeView roomId={params.id} roomStatus={roomData?.status} />
+      )}
     </>
   );
 }
 
-function InterviewerView({ roomId }: { roomId: string }) {
-  // const [language, setLanguage] = useState<LanguageTypes>("javascript");
-  // const [stdOut, setStdOut] = useState("");
-  // const [stdErr, setStdError] = useState("");
-  // const [code, setCode] = useState<string>("");
-  // const [activeTab, setActiveTab] = useState<"stdout" | "stderr">("stdout");
-
+function InterviewerView({
+  roomId,
+}: {
+  roomId: string;
+  roomStatus: string | undefined;
+}) {
   const queryCodeEditor = useQuery(api.code_editor.queryCodeEditor, { roomId });
 
   const { isPending, error, data, mutate } = useMutation({
-    mutationKey: ["execute_code"],
-    mutationFn: async (args: PistonArgs) => {
+    mutationKey: ["end_interview"],
+    mutationFn: async (args: GenerateReport) => {
       try {
-        const req = await axios.post(
-          "https://emkc.org/api/v2/piston/execute",
-          args
-        );
+        const req = await axios.put("/api", args);
 
-        const res = req.data as PistonResponse;
+        const res = req.data as { message: string };
+
+        toast({
+          title: "Scheduled results",
+          description: "Processing results, please your emails in a few mins.",
+        });
 
         return Promise.resolve(res);
       } catch (err: any) {
         if (axios.isAxiosError(err)) {
+          toast({
+            title: "Uh oh! Something went wrong.",
+            description: err.response?.data.message,
+          });
+
           return Promise.reject(err.response?.data);
         } else {
+          toast({
+            title: "Uh oh! Something went wrong.",
+            description: "There was a problem with your request.",
+          });
           return Promise.reject(err.message);
         }
       }
     },
   });
 
-  // useEffect(() => {
-  //   setCode(SNIPPETS[language]);
-  // }, [language]);
-
-  // useEffect(() => {
-  //   if (data) {
-  //     const stdErr = data.run.stderr;
-  //     const stdOut = data.run.stdout;
-
-  //     setStdError(stdErr);
-  //     setStdOut(stdOut);
-
-  //     if (stdErr && stdErr.length > 0) {
-  //       setActiveTab("stderr");
-  //     }
-
-  //     if ((stdOut && !stdErr) || stdErr.length === 0) {
-  //       setActiveTab("stdout");
-  //     }
-  //   }
-  // }, [data]);
-
   return (
     <div className="h-screen font-geistMono flex flex-col bg-background text-foreground">
       <nav className="bg-primary text-primary-foreground p-4 flex justify-between items-center">
         <h1 className="text-lg font-bold">Async Interview</h1>
-        <Button variant="secondary" size={"sm"}>
-          <Save className="mr-1 size-4" /> Save Code
+        <Button
+          variant="secondary"
+          size={"sm"}
+          onClick={() => {
+            mutate({ roomId });
+          }}
+        >
+          <Save className="mr-1 size-4" /> End Interview
         </Button>
       </nav>
 
@@ -369,7 +317,12 @@ function InterviewerView({ roomId }: { roomId: string }) {
   );
 }
 
-function IntervieweeView({ roomId }: { roomId: string }) {
+function IntervieweeView({
+  roomId,
+}: {
+  roomId: string;
+  roomStatus: string | undefined;
+}) {
   const [language, setLanguage] = useState<LanguageTypes>("javascript");
   const [stdOut, setStdOut] = useState("");
   const [stdErr, setStdError] = useState("");
