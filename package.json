@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "ts:lint": "tsc --noEmit",
-    "inngest": "pnpm dlx inngest-cli@latest dev",
+    "inngest": "pnpm inngest-cli dev",
     "email": "email dev"
   },
   "dependencies": {
@@ -45,7 +45,7 @@
     "convex": "^1.17.0",
     "date-fns": "^4.1.0",
     "framer-motion": "^11.11.9",
-    "inngest": "^3.25.1",
+    "inngest": "^3.26.2",
     "jsonwebtoken": "^9.0.2",
     "jwks-rsa": "^3.1.0",
     "lucide-react": "^0.453.0",

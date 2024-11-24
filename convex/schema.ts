@@ -13,6 +13,11 @@ export default defineSchema(
     interview_rooms: defineTable({
       roomId: v.string(),
       position: v.string(),
+      status: v.union(
+        v.literal("pending"),
+        v.literal("in-progress"),
+        v.literal("concluded")
+      ),
       interviewer: v.object({
         email: v.string(),
         first_name: v.string(),

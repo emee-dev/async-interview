@@ -23,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { api } from "@/convex/_generated/api";
+import { toast } from "@/hooks/use-toast";
 import { generateId } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
@@ -31,7 +32,7 @@ import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
 import { useConvex, usePaginatedQuery } from "convex/react";
 import { formatDistanceToNow, parseISO } from "date-fns";
-import { Menu, Plus } from "lucide-react";
+import { Loader, Menu, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -79,7 +80,11 @@ export default function InterviewDashboard() {
     }) => {
       try {
         if (!args.interviewerEmail) {
-          return Promise.reject("Authentication error, please login.");
+          throw new Error("Authentication error, please login.");
+        }
+
+        if (args.interviewerEmail === args.intervieweeEmail) {
+          throw new Error("Invalid email, enter interviewee email.");
         }
 
         const [interviewer, interviewee] = await Promise.all([
@@ -93,20 +98,17 @@ export default function InterviewDashboard() {
         ]);
 
         if (!interviewer) {
-          return Promise.reject(
-            new Error("Interviewer does not exist, please login.")
-          );
+          throw new Error("Interviewer does not exist, please login.");
         }
 
         if (!interviewee) {
-          return Promise.reject(
-            new Error("Interviewee does not exist. Verify email.")
-          );
+          throw new Error("Interviewee does not exist. Verify email.");
         }
 
         const createRoomArgs: CreateReport = {
           position: args.position,
           roomId: generateId(7),
+          roomStatus: "pending",
           interviewer: {
             email: interviewer.email,
             first_name: interviewer.first_name,
@@ -121,11 +123,26 @@ export default function InterviewDashboard() {
 
         const res = req.data as { message: string };
 
+        toast({
+          title: "Scheduled: Interview",
+          description: "Please check your email inboxes.",
+        });
+
         return Promise.resolve(res.message);
       } catch (err: any) {
+        console.log(err.message);
         if (axios.isAxiosError(err)) {
+          toast({
+            title: "Uh oh! Something went wrong.",
+            description: err.response?.data.message,
+          });
+
           return Promise.reject(err.response?.data.message);
         } else {
+          toast({
+            title: "Uh oh! Something went wrong.",
+            description: err.message,
+          });
           return Promise.reject(err.message);
         }
       }
@@ -190,7 +207,17 @@ export default function InterviewDashboard() {
                   />
                 </div>
                 <DialogFooter className="mt-2">
-                  <Button type="submit">Send Invite</Button>
+                  {!isPending && <Button type="submit">Send Invite</Button>}
+                  {isPending && (
+                    <Button
+                      type="button"
+                      disabled
+                      className="flex items-center"
+                    >
+                      <Loader className="size-4 mr-1 animate-spin" />
+                      Scheduling
+                    </Button>
+                  )}
                 </DialogFooter>
               </form>
             </DialogContent>

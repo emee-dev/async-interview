@@ -150,6 +150,7 @@ export const createRoom = inngest.createFunction(
     const createRoom = await step.run("create_room", async () => {
       const res = await fetchMutation(api.interview.createRoom, {
         roomId: payload.roomId,
+        status: payload.roomStatus,
         position: payload.position,
         interviewer: payload.interviewer,
         interviewee: payload.interviewee,
@@ -176,7 +177,7 @@ export const createRoom = inngest.createFunction(
       const { error, data } = await resend.emails.send({
         from: "onboarding@resend.dev",
         to: [interviewer.email, interviewee.email],
-        subject: "Interview initiated",
+        subject: "Interview scheduled.",
         html: await render(
           InterviewCreated({
             interviewerName: interviewer.first_name,

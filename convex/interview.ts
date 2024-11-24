@@ -6,6 +6,11 @@ export const createRoom = mutation({
   args: {
     roomId: v.string(),
     position: v.string(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("in-progress"),
+      v.literal("concluded")
+    ),
     interviewer: v.object({
       email: v.string(),
       first_name: v.string(),
@@ -15,7 +20,10 @@ export const createRoom = mutation({
       first_name: v.string(),
     }),
   },
-  handler: async (ctx, { roomId, interviewee, interviewer, position }) => {
+  handler: async (
+    ctx,
+    { roomId, interviewee, status, interviewer, position }
+  ) => {
     const room = await ctx.db
       .query("interview_rooms")
       .filter((q) => q.eq(q.field("roomId"), roomId))
@@ -28,6 +36,7 @@ export const createRoom = mutation({
 
     const createRecord = await ctx.db.insert("interview_rooms", {
       roomId,
+      status,
       position,
       interviewer,
       interviewee,
@@ -191,6 +200,5 @@ export const getUserByEmail = query({
       .first();
   },
 });
-
 
 // For code editors edits

@@ -28,6 +28,7 @@ export type Pariticipants = {
 
 export type CreateReport = {
   roomId: string;
+  roomStatus: "pending" | "in-progress" | "concluded";
   position: string; // eg Software developer
   interviewer: Pariticipants;
   interviewee: Pariticipants;
