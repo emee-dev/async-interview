@@ -176,12 +176,12 @@ export default function AsyncInterviewRoom({ params }: ComponentProps) {
   }, [params]);
 
   // initialise the video call
-  useEffect(() => {
-    if (context.roomId && context.group) {
-      superviz.startRoom();
-      context.setIsVideoEnabled(true);
-    }
-  }, [context]);
+  // useEffect(() => {
+  //   if (context.roomId && context.group) {
+  //     superviz.startRoom();
+  //     context.setIsVideoEnabled(true);
+  //   }
+  // }, [context]);
 
   // get user email
   useEffect(() => {

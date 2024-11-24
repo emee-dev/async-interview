@@ -148,13 +148,17 @@ export const createRoom = inngest.createFunction(
     const payload = event.data as CreateReport;
 
     const createRoom = await step.run("create_room", async () => {
-      const res = await fetchMutation(api.interview.createRoom, {
-        roomId: payload.roomId,
-        status: payload.roomStatus,
-        position: payload.position,
-        interviewer: payload.interviewer,
-        interviewee: payload.interviewee,
-      });
+      const res = await fetchMutation(
+        api.interview.createRoom,
+        {
+          roomId: payload.roomId,
+          status: payload.roomStatus,
+          position: payload.position,
+          interviewer: payload.interviewer,
+          interviewee: payload.interviewee,
+        },
+        { url: env.NEXT_PUBLIC_CONVEX_URL }
+      );
 
       if (!res) {
         throw new AppError(
@@ -290,11 +294,15 @@ export const generateReport = inngest.createFunction(
     });
 
     const saveFinalReport = await step.run("store_final_report", async () => {
-      const data = await fetchMutation(api.interview.storePostInterviewData, {
-        roomId: payload.roomId,
-        recording: getRecordings,
-        analysis: extractInsights,
-      });
+      const data = await fetchMutation(
+        api.interview.storePostInterviewData,
+        {
+          roomId: payload.roomId,
+          recording: getRecordings,
+          analysis: extractInsights,
+        },
+        { url: env.NEXT_PUBLIC_CONVEX_URL }
+      );
 
       if (!data) {
         throw new AppError(
@@ -346,12 +354,16 @@ export const handleUserCreateEvent = inngest.createFunction(
     const payload = event.data as User;
 
     return await step.run("kinde_create_user", async () => {
-      const record = await fetchMutation(api.interview.upsertUserRecord, {
-        email: payload.email,
-        first_name: payload.first_name,
-        last_name: payload.last_name,
-        kindeId: payload.kindeId,
-      });
+      const record = await fetchMutation(
+        api.interview.upsertUserRecord,
+        {
+          email: payload.email,
+          first_name: payload.first_name,
+          last_name: payload.last_name,
+          kindeId: payload.kindeId,
+        },
+        { url: env.NEXT_PUBLIC_CONVEX_URL }
+      );
 
       if (!record) {
         throw new AppError(
