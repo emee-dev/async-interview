@@ -259,29 +259,45 @@ function InterviewerView({ roomId }: { roomId: string }) {
       <nav className="bg-primary text-primary-foreground p-4 flex justify-between items-center">
         <h1 className="text-lg font-bold">Async Interview</h1>
         <div className="flex items-center gap-x-2">
-          <Button
-            variant="secondary"
-            size={"sm"}
-            onClick={async () => {
-              toggleRecording();
-              updateRoom.mutate({
-                roomId,
-                status: "in-progress",
-              });
-            }}
-          >
-            <Play className="mr-1 size-4" /> Begin Interview
-          </Button>
+          {!updateRoom.isPending && (
+            <Button
+              variant="secondary"
+              size={"sm"}
+              onClick={async () => {
+                toggleRecording();
+                updateRoom.mutate({
+                  roomId,
+                  status: "in-progress",
+                });
+              }}
+            >
+              <Play className="mr-1 size-4" /> Begin Interview
+            </Button>
+          )}
 
-          <Button
-            variant="destructive"
-            size={"sm"}
-            onClick={async () => {
-              endInterview.mutate({ roomId });
-            }}
-          >
-            <Save className="mr-1 size-4" /> End Interview
-          </Button>
+          {updateRoom.isPending && (
+            <Button variant="secondary" size={"sm"} disabled>
+              <Loader className="mr-1 size-4 animate-spin" /> Initiating
+            </Button>
+          )}
+
+          {!endInterview.isPending && (
+            <Button
+              variant="destructive"
+              size={"sm"}
+              onClick={async () => {
+                endInterview.mutate({ roomId });
+              }}
+            >
+              <Save className="mr-1 size-4" /> End Interview
+            </Button>
+          )}
+
+          {endInterview.isPending && (
+            <Button variant="destructive" disabled size={"sm"}>
+              <Loader className="mr-1 size-4 animate-spin" /> Terminating
+            </Button>
+          )}
         </div>
       </nav>
 
@@ -454,10 +470,17 @@ function IntervieweeView({ roomId }: { roomId: string }) {
       <nav className="bg-primary text-primary-foreground p-4 flex justify-between items-center">
         <h1 className="text-lg font-bold">Async Interview</h1>
         <div className="flex items-center gap-x-2">
-          <div>Room is has not started.</div>
-          <Button variant="secondary" size={"sm"}>
-            <Save className="mr-1 size-4" /> Quit
-          </Button>
+          {roomData?.status !== "in-progress" && (
+            <div className="text-base text-red-400">
+              Interview has not started.
+            </div>
+          )}
+
+          {roomData?.status === "in-progress" && (
+            <div className="text-base text-green-400">
+              Interview in progress
+            </div>
+          )}
         </div>
       </nav>
 
