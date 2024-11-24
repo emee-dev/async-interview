@@ -224,16 +224,6 @@ export default function AsyncInterviewRoom({ params }: ComponentProps) {
     <>
       {userType === "interviewer" && <InterviewerView roomId={params.id} />}
       {userType === "interviewee" && <IntervieweeView roomId={params.id} />}
-
-      {/* if kinde is no longer loading, then show a confirmation view 
-           for interviewer to manually start the interview */}
-      {roomData?.status === "pending" && userType === "interviewer" ? (
-        <div>Confirmation: click button to start interview</div>
-      ) : null}
-
-      {roomData?.status === "pending" && userType === "interviewee" ? (
-        <div>Hold on the interview has not started.</div>
-      ) : null}
     </>
   );
 }
@@ -318,30 +308,6 @@ function InterviewerView({ roomId }: { roomId: string }) {
                     ))}
                   </SelectContent>
                 </Select>
-
-                {/* {!isPending && (
-                  <Button
-                    onClick={() => {
-                      mutate({
-                        files: [
-                          {
-                            content: code,
-                          },
-                        ],
-                        language,
-                        version: LANGUAGES[language],
-                      });
-                    }}
-                    size={"sm"}
-                  >
-                    Execute
-                  </Button>
-                )}
-                {isPending && (
-                  <Button disabled size={"sm"}>
-                    Evaluating <Loader className="ml-1 size-4 animate-spin" />
-                  </Button>
-                )} */}
               </div>
               <div className="flex-grow bg-background rounded-md p-2 overflow-auto">
                 <Suspense fallback={<div>Loading...</div>}>
@@ -349,6 +315,7 @@ function InterviewerView({ roomId }: { roomId: string }) {
                     width="100%"
                     height="100%"
                     theme={[oneDark, customTheme]}
+                    editable={false}
                     value={queryCodeEditor?.code}
                     extensions={[
                       loadLanguage(
@@ -408,8 +375,6 @@ function IntervieweeView({ roomId }: { roomId: string }) {
   const [stdErr, setStdError] = useState("");
   const [code, setCode] = useState<string>("");
   const [activeTab, setActiveTab] = useState<"stdout" | "stderr">("stdout");
-
-  const { getUser, isLoading, isAuthenticated } = useKindeBrowserClient();
 
   // const queryCodeEditor = useQuery()
   const mutateCodeEditor = convexUseMutation(api.code_editor.mutateCodeEditor);

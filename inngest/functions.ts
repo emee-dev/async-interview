@@ -175,7 +175,7 @@ export const createRoom = inngest.createFunction(
       const language = "javascript";
 
       const res = await fetchMutation(
-        api.code_editor.mutateCodeEditor,
+        api.code_editor.createEditorState,
         {
           language,
           stdOut: "",
