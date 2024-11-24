@@ -265,47 +265,6 @@ function InterviewerView({ roomId }: { roomId: string }) {
     <div className="h-screen font-geistMono flex flex-col bg-background text-foreground">
       <nav className="bg-primary text-primary-foreground p-4 flex justify-between items-center">
         <h1 className="text-lg font-bold">Async Interview</h1>
-        <div className="flex items-center gap-x-2">
-          {!updateRoom.isPending && (
-            <Button
-              variant="secondary"
-              size={"sm"}
-              onClick={async () => {
-                toggleRecording();
-                updateRoom.mutate({
-                  roomId,
-                  status: "in-progress",
-                });
-              }}
-            >
-              <Play className="mr-1 size-4" /> Begin Interview
-            </Button>
-          )}
-
-          {updateRoom.isPending && (
-            <Button variant="secondary" size={"sm"} disabled>
-              <Loader className="mr-1 size-4 animate-spin" /> Initiating
-            </Button>
-          )}
-
-          {!endInterview.isPending && (
-            <Button
-              variant="destructive"
-              size={"sm"}
-              onClick={async () => {
-                endInterview.mutate({ roomId });
-              }}
-            >
-              <Save className="mr-1 size-4" /> End Interview
-            </Button>
-          )}
-
-          {endInterview.isPending && (
-            <Button variant="destructive" disabled size={"sm"}>
-              <Loader className="mr-1 size-4 animate-spin" /> Terminating
-            </Button>
-          )}
-        </div>
       </nav>
 
       {/* Main content */}
@@ -326,6 +285,48 @@ function InterviewerView({ roomId }: { roomId: string }) {
                     ))}
                   </SelectContent>
                 </Select>
+                <div className="flex items-center gap-x-2">
+                  {!updateRoom.isPending && (
+                    <Button
+                      variant="secondary"
+                      size={"sm"}
+                      onClick={async () => {
+                        toggleRecording();
+                        updateRoom.mutate({
+                          roomId,
+                          status: "in-progress",
+                        });
+                      }}
+                    >
+                      <Play className="mr-1 size-4" /> Begin Interview
+                    </Button>
+                  )}
+
+                  {updateRoom.isPending && (
+                    <Button variant="secondary" size={"sm"} disabled>
+                      <Loader className="mr-1 size-4 animate-spin" /> Initiating
+                    </Button>
+                  )}
+
+                  {!endInterview.isPending && (
+                    <Button
+                      variant="destructive"
+                      size={"sm"}
+                      onClick={async () => {
+                        endInterview.mutate({ roomId });
+                      }}
+                    >
+                      <Save className="mr-1 size-4" /> End Interview
+                    </Button>
+                  )}
+
+                  {endInterview.isPending && (
+                    <Button variant="destructive" disabled size={"sm"}>
+                      <Loader className="mr-1 size-4 animate-spin" />{" "}
+                      Terminating
+                    </Button>
+                  )}
+                </div>
               </div>
               <div className="flex-grow bg-background rounded-md p-2 overflow-auto">
                 <Suspense fallback={<div>Loading...</div>}>
