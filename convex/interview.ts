@@ -30,21 +30,22 @@ export const createRoom = mutation({
       .first();
 
     if (!room) {
-      console.warn(`Error finding room with id: ${roomId}`);
-      return null;
+      console.warn(`Creating room with roomId: ${roomId}`);
+      const createRecord = await ctx.db.insert("interview_rooms", {
+        roomId,
+        status,
+        position,
+        interviewer,
+        interviewee,
+      });
+
+      const getRecord = await ctx.db.get(createRecord);
+
+      return getRecord;
     }
 
-    const createRecord = await ctx.db.insert("interview_rooms", {
-      roomId,
-      status,
-      position,
-      interviewer,
-      interviewee,
-    });
-
-    const getRecord = await ctx.db.get(createRecord);
-
-    return getRecord;
+    console.warn(`Room already exists: ${roomId}`);
+    return room;
   },
 });
 

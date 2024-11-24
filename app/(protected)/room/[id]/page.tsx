@@ -211,7 +211,11 @@ export default function AsyncInterviewRoom({ params }: ComponentProps) {
 
   // if kinde is loading user data
   if (isLoading) {
-    return <div>Initializing room, please hold on.</div>;
+    return (
+      <div className="flex items-center justify-center pt-32">
+        <div>Initializing room, please hold on.</div>
+      </div>
+    );
   }
 
   //
