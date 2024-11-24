@@ -7,7 +7,7 @@ import { useSuperviz, useVideo } from "@superviz/react-sdk";
 import dynamic from "next/dynamic";
 import { Suspense, useEffect, useLayoutEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Loader, Save } from "lucide-react";
+import { Loader, Play, Save } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -89,6 +89,7 @@ const customTheme = EditorView.theme({
 
 export default function AsyncInterviewRoom({ params }: ComponentProps) {
   const { getUser, isLoading, isAuthenticated } = useKindeBrowserClient();
+  const [givenName, setGivenName] = useState<string | null>(null);
   const [userType, setUserType] = useState<
     "interviewer" | "interviewee" | null
   >(null);
@@ -102,21 +103,8 @@ export default function AsyncInterviewRoom({ params }: ComponentProps) {
     params.id ? { roomId: params.id } : "skip"
   );
 
-  // set superviz video details
-  // useEffect(() => {
-  //   if (context && params.id) {
-  //     const group = {
-  //       id: `group-Interview`,
-  //       name: `group-Interview`,
-  //     };
-
-  //     context.setRoomId(params.id);
-  //     context.setGroup(group);
-  //   }
-  // }, [params]);
-
   useLayoutEffect(() => {
-    if (params.id) {
+    if (params.id && givenName) {
       const group = {
         id: `group-Interview`,
         name: `group-Interview`,
@@ -124,24 +112,30 @@ export default function AsyncInterviewRoom({ params }: ComponentProps) {
 
       context.setRoomId(params.id);
       context.setGroup(group);
-    }
-  }, [params]);
-
-  // initialise the video call
-  useEffect(() => {
-    if (context.roomId && context.group) {
-      superviz.startRoom();
+      context.setParticipant({
+        id: givenName,
+        name: givenName,
+      });
       context.setIsVideoEnabled(true);
     }
-  }, [context]);
+  }, [params, givenName]);
 
-  // get user email
+  // initialise the video call
+  // useEffect(() => {
+  //   if (context.roomId && context.group) {
+  //     superviz.startRoom();
+  //   }
+  // }, [context]);
+
   useEffect(() => {
     if (!isLoading && isAuthenticated && roomData) {
       const user = getUser();
 
       if (user && user.email) {
         const userEmail = user.email;
+        const givenName = user.given_name;
+
+        setGivenName(givenName || "");
 
         const interviewer = roomData.interviewer.email;
         const interviewee = roomData.interviewee.email;
@@ -189,7 +183,8 @@ function InterviewerView({
   roomStatus: string | undefined;
 }) {
   const queryCodeEditor = useQuery(api.code_editor.queryCodeEditor, { roomId });
-
+  const video = useVideo();
+  const superviz = useSuperviz();
   const { isPending, error, data, mutate } = useMutation({
     mutationKey: ["end_interview"],
     mutationFn: async (args: GenerateReport) => {
@@ -227,15 +222,29 @@ function InterviewerView({
     <div className="h-screen font-geistMono flex flex-col bg-background text-foreground">
       <nav className="bg-primary text-primary-foreground p-4 flex justify-between items-center">
         <h1 className="text-lg font-bold">Async Interview</h1>
-        <Button
-          variant="secondary"
-          size={"sm"}
-          onClick={() => {
-            mutate({ roomId });
-          }}
-        >
-          <Save className="mr-1 size-4" /> End Interview
-        </Button>
+        <div className="flex items-center gap-x-2">
+          <Button
+            variant="secondary"
+            size={"sm"}
+            onClick={() => {
+              video.toggleRecording();
+            }}
+          >
+            <Play className="mr-1 size-4" /> Begin Interview
+          </Button>
+
+          <Button
+            variant="destructive"
+            size={"sm"}
+            onClick={() => {
+              superviz.stopRoom();
+              video.toggleRecording();
+              mutate({ roomId });
+            }}
+          >
+            <Save className="mr-1 size-4" /> End Interview
+          </Button>
+        </div>
       </nav>
 
       {/* Main content */}
@@ -329,7 +338,6 @@ function IntervieweeView({
   const [code, setCode] = useState<string>("");
   const [activeTab, setActiveTab] = useState<"stdout" | "stderr">("stdout");
 
-  // const queryCodeEditor = useQuery()
   const mutateCodeEditor = convexUseMutation(api.code_editor.mutateCodeEditor);
 
   const roomData = useQuery(
@@ -470,6 +478,7 @@ function IntervieweeView({
                     height="100%"
                     theme={[oneDark, customTheme]}
                     value={code}
+                    editable={roomData?.status === "in-progress" ? true : false}
                     extensions={[loadLanguage(language) as any]}
                     onChange={(code) => setCode(code)}
                     className="text-base h-full w-full"
