@@ -326,6 +326,7 @@ export const generateReport = inngest.createFunction(
     });
 
     // LLM extract insights or report summary
+    // TODO send an email if there was not transcripts
     const extractInsights = await step.run("extract_insights", async () => {
       const objective =
         "Summarize the candidate's key strengths and weaknesses as discussed in the transcript.";
