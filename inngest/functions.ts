@@ -9,7 +9,7 @@ import { render } from "@react-email/render";
 import InterviewCreated from "@/emails/InterviewCreated";
 import InterviewReport from "@/emails/InterviewReport";
 import { env } from "@/lib/env";
-import { CreateReport } from "@/app/api/route";
+import { CreateReport, GenerateReport } from "@/app/api/route";
 import { User } from "@/app/api/webhook/route";
 
 type Recording = {
@@ -203,10 +203,7 @@ export const generateReport = inngest.createFunction(
   { id: "after-interview" },
   { event: "interview/interview.report" },
   async ({ event, step }: Context<Inngest<{ id: string }>>) => {
-    const payload = event.data as Pick<
-      CreateReport,
-      "roomId" | "interviewer" | "interviewee"
-    >;
+    const payload = event.data as GenerateReport;
 
     const getRecordings = await step
       .run("get_recordings", async () => {
@@ -338,7 +335,7 @@ export const generateReport = inngest.createFunction(
       return data;
     });
 
-    return { message: `Hello ${event.data.email}!`, report: saveFinalReport };
+    return saveFinalReport;
   }
 );
 

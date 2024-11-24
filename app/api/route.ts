@@ -57,3 +57,32 @@ export const POST = async (req: Request) => {
     return Response.json({ message: "Internal server error.", data: null });
   }
 };
+
+export type GenerateReport = Pick<
+  CreateReport,
+  "roomId" | "interviewer" | "interviewee"
+>;
+
+export const PUT = async (req: Request) => {
+  try {
+    const params = (await req.json()) as CreateReport;
+
+    await inngest.send({
+      name: "interview/interview.report",
+      data: {
+        roomId: params.roomId,
+        position: params.position,
+        roomStatus: params.roomStatus,
+        interviewer: params.interviewer,
+        interviewee: params.interviewee,
+      } as CreateReport,
+    });
+
+    return Response.json({
+      message: "Creating room please, check your email.",
+    });
+  } catch (error) {
+    console.error(error);
+    return Response.json({ message: "Internal server error.", data: null });
+  }
+};
