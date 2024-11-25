@@ -478,13 +478,13 @@ function IntervieweeView({ roomId }: { roomId: string }) {
       <nav className="bg-primary text-primary-foreground p-4 flex justify-between items-center">
         <h1 className="text-lg font-bold">Async Interview</h1>
         <div className="flex items-center gap-x-2">
-          {roomData?.status !== "pending" && (
+          {roomData?.status === "pending" && (
             <div className="text-base text-red-400">
               Interview has not started.
             </div>
           )}
 
-          {roomData?.status !== "concluded" && (
+          {roomData?.status === "concluded" && (
             <div className="text-base text-red-400">
               Interview has concluded.
             </div>
